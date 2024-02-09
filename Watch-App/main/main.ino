@@ -1,3 +1,7 @@
+// Author: Max Finch
+// Date: 02/09/2024
+
+
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
