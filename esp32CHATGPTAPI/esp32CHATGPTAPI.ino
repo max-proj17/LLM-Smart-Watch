@@ -4,7 +4,7 @@
 
 const char* ssid = "Transponder Snail";  
 const char* password = "max17$$$";      
-const char* apiKey = "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"; 
+const char* apiKey = ""; 
 const char* prompt = "\"Hello, who are you?\"";  
 const char* content = "\"You are an AI assistant named Alex. You sound professional and don't talk more than needed. You are able to explain things simply and can give real life examples to complex concepts asked by the user.\"";  
 
