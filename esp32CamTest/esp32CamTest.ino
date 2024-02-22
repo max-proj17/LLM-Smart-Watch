@@ -3,7 +3,7 @@
 #include "camera_pins.h"
 #include "sd_read_write.h"
 #define BUTTON_PIN  0
-
+int photo_index = 0;
 void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(false);
@@ -65,8 +65,9 @@ void takeAndSavePhoto() {
   camera_fb_t *fb = esp_camera_fb_get();
   if (fb != NULL) {
     // Generate a unique file name based on the number of files
-    int photo_index = readFileNum(SD_MMC, "/camera");
-    if (photo_index != -1) {
+  
+    photo_index = readFileNum(SD_MMC, "/camera") + 1;
+    if (photo_index != 0) {
       // Construct the file path where the photo will be saved
       String path = "/camera/" + String(photo_index) + ".jpg";
       // Save the captured photo to the SD card
@@ -159,7 +160,7 @@ int cameraSetup(void) {
   sensor_t *s = esp_camera_sensor_get();
   // initial sensors are flipped vertically and colors are a bit saturated
   s->set_vflip(s, 0); // flip it back
-  s->set_brightness(s, 1); // up the brightness just a bit
+  s->set_brightness(s, 2); // up the brightness just a bit
   s->set_saturation(s, 0); // lower the saturation
 
   Serial.println("Camera configuration complete!");
