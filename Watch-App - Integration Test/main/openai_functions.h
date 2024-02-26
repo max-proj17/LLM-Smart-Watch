@@ -3,7 +3,8 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
-String getResponseFromOpenAI(String userPrompt, String base64Image, const char* apiKey, const char* content);
+
+String getResponseFromOpenAI(const String& userPrompt, const String& imageUrl, const char* apiKey, const char* content);
 
 
 #endif

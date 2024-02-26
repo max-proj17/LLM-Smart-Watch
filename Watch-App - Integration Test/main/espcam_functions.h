@@ -2,8 +2,9 @@
 #define ESPCAM_FUNCTIONS_H
 #include <Arduino.h>
 #include "esp_camera.h"
-
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 void cameraSetup();
-String captureAndEncodeImage();
+String uploadImageToFirebase();
 
 #endif // ESPCAM_FUNCTIONS_H

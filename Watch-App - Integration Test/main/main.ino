@@ -9,8 +9,10 @@
 #include "espcam_functions.h" // Include the camera functions header
 #define BUTTON_PIN  0
 
-const char* ssid = "Transponder Snail";
-const char* password = "max17$$$";
+// const char* ssid = "Transponder Snail";
+// const char* password = "max17$$$";
+const char* ssid = "ICS The Nest";
+const char* password = "hsv#gsxXeh";
 const char* apiKey = "";
 const char* content = "\"You are an AI assistant named Alex. You sound professional and don't talk more than needed. You are able to explain things simply and can give real life examples to complex concepts asked by the user.\"";  
 
@@ -36,7 +38,7 @@ void setup() {
 void loop() {
   static bool isImageNeeded = false;
   static bool isWaitingForImageResponse = false;
-  static String base64Image = "";
+  static String imageUrl = "";
   static String input = "";
 
   if (Serial.available() && !isWaitingForImageResponse) {
@@ -79,19 +81,20 @@ void loop() {
     if (digitalRead(BUTTON_PIN) == LOW) {
       while (digitalRead(BUTTON_PIN) == LOW); // Wait for button release.
       Serial.println("Capturing and encoding image...");
-      base64Image = captureAndEncodeImage();
-      if (base64Image.isEmpty()) {
-        Serial.println("Failed to capture or encode image.");
+      imageUrl = uploadImageToFirebase();
+      if (imageUrl.isEmpty()) {
+        Serial.println("Failed to capture or upload image.");
       } else {
-        Serial.println("Image captured and encoded.");
-        // Send the query with the image.
-        String response = getResponseFromOpenAI(input, base64Image, apiKey, content);
+        Serial.println("Image uploaded successfully. URL: " + imageUrl);
+        // Send the query with the image URL.
+        String response = getResponseFromOpenAI(input, imageUrl, apiKey, content);
         Serial.println("Response from OpenAI: " + response);
       }
       // Reset the flags for the next query.
       isImageNeeded = false;
       isWaitingForImageResponse = false;
       input = ""; // Clear input for the next query.
+      imageUrl = ""; // Clear the image URL for the next query.
     }
   }
 }

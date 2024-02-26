@@ -4,9 +4,9 @@
 #include "camera_pins.h"
 #include "esp32-hal-log.h"
 #include "esp_camera.h"
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 
-// Include the necessary header for mbedtls base64 functions
-#include "mbedtls/base64.h"
 
 
 void cameraSetup() {
@@ -61,38 +61,46 @@ void cameraSetup() {
   Serial.println("Camera configuration complete!");
 }
 
-String captureAndEncodeImage() {
+String uploadImageToFirebase() {
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb) {
         Serial.println("Camera capture failed");
         return "";
     }
 
-    size_t outlen = 0; // Variable to hold the length of the encoded string
-    // Estimate the length of the encoded data
-    size_t encodedLength = 4 * ((fb->len + 2) / 3) + 1;
+    HTTPClient http;
+    // URL for our Firebase Storage 
+    String url = "https://firebasestorage.googleapis.com/v0/b/llmwatch-bc9e5.appspot.com/o?uploadType=media&name=images/myImage.jpg";
 
-    // Allocate memory for the encoded data
-    unsigned char *encodedData = (unsigned char*)malloc(encodedLength);
-    if (!encodedData) {
-        Serial.println("Failed to allocate memory for base64 encoding");
-        esp_camera_fb_return(fb);
-        return "";
+    http.begin(url);
+    http.addHeader("Content-Type", "image/jpeg");
+
+    // POST image data
+    int httpResponseCode = http.POST(fb->buf, fb->len);
+
+    String responsePayload = "{}"; 
+    if (httpResponseCode == 200) {
+        responsePayload = http.getString(); 
+    } else {
+        Serial.print("Error during image upload: ");
+        Serial.println(httpResponseCode);
     }
 
-    // Perform the encoding
-    int ret = mbedtls_base64_encode(encodedData, encodedLength, &outlen, fb->buf, fb->len);
-    if (ret != 0) {
-        Serial.printf("Failed to encode image in base64, mbedtls error: %d\n", ret);
-        free(encodedData);
-        esp_camera_fb_return(fb);
-        return "";
-    }
-    encodedData[outlen] = '\0';
-    // Create a String object from the encoded data
-    String encodedString = String((char*)encodedData);
-    free(encodedData); // Free the allocated memory
+    http.end(); // Close the connection
     esp_camera_fb_return(fb); // Return the frame buffer back to the driver
 
-    return encodedString;
+    // Parse response to extract the download URL
+    DynamicJsonDocument doc(1024); 
+    deserializeJson(doc, responsePayload);
+    String downloadUrl = doc["downloadTokens"].as<String>(); 
+
+    if (!downloadUrl.isEmpty()) {
+        // Construct the download URL
+        downloadUrl = "https://firebasestorage.googleapis.com/v0/b/llmwatch-bc9e5.appspot.com/o/images%2FmyImage.jpg?alt=media&token=" + downloadUrl;
+        Serial.println("Image uploaded successfully: " + downloadUrl);
+    } else {
+        Serial.println("Failed to upload image or parse response.");
+    }
+
+    return downloadUrl; // Return the download URL or an empty string if failed
 }

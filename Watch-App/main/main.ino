@@ -9,7 +9,7 @@
 
 const char* ssid = "Transponder Snail";
 const char* password = "max17$$$";
-const char* apiKey = "";
+const char* apiKey = "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";
 const char* content = "\"You are an AI assistant named Alex. You sound professional and don't talk more than needed. You are able to explain things simply and can give real life examples to complex concepts asked by the user.\"";  
 
 void setup() {
