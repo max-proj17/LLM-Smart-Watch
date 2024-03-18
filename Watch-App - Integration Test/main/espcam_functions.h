@@ -6,5 +6,6 @@
 #include <ArduinoJson.h>
 void cameraSetup();
 String uploadImageToFirebase();
+String generateUniqueFilename();
 
 #endif // ESPCAM_FUNCTIONS_H

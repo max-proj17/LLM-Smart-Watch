@@ -7,6 +7,21 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
+int imageCounter = 0;
+const int maxImages = 15;
+
+String generateUniqueFilename() {
+  // Use the image counter to generate a unique filename for each image
+  String filename = "myImage_" + String(imageCounter) + ".jpg";
+  imageCounter++;
+  // Reset the counter if it exceeds the limit (optional)
+  if (imageCounter >= maxImages) {
+    Serial.println("Image limit reached. Please clear images.");
+    // Optionally reset counter or implement mechanism to delete old images
+    imageCounter = 0;
+  }
+  return filename;
+}
 
 
 void cameraSetup() {
@@ -30,21 +45,22 @@ void cameraSetup() {
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
-  config.frame_size = FRAMESIZE_UXGA;
+  //config.frame_size = FRAMESIZE_UXGA;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
-  config.fb_location = CAMERA_FB_IN_PSRAM;
+  // config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+  config.grab_mode = CAMERA_GRAB_LATEST;
   config.jpeg_quality = 12;
   config.fb_count = 1;
+  config.frame_size = FRAMESIZE_SVGA;
+  config.fb_location = CAMERA_FB_IN_DRAM;
 
+  Serial.println(psramFound());
   // Adjustments for PSRAM
   if (psramFound()) {
-    config.jpeg_quality = 10;
-    config.fb_count = 2;
-    config.grab_mode = CAMERA_GRAB_LATEST;
+    //config.jpeg_quality = 10;
+    //config.grab_mode = CAMERA_GRAB_LATEST;
   } else {
-    config.frame_size = FRAMESIZE_SVGA;
-    config.fb_location = CAMERA_FB_IN_DRAM;
+   
   }
 
   esp_err_t err = esp_camera_init(&config);
@@ -62,15 +78,23 @@ void cameraSetup() {
 }
 
 String uploadImageToFirebase() {
-    camera_fb_t *fb = esp_camera_fb_get();
+    camera_fb_t * fb = NULL;
+    fb = esp_camera_fb_get();
+    esp_camera_fb_return(fb); // dispose the buffered image
+    fb = NULL; // reset to capture errors
+    Serial.println("TAKING SECOND IMAGE");
+    delay(1000); // Adjust the delay time as needed
+    fb = esp_camera_fb_get(); // get fresh image
+
     if (!fb) {
         Serial.println("Camera capture failed");
         return "";
     }
 
     HTTPClient http;
+    String filename = generateUniqueFilename();
     // URL for our Firebase Storage 
-    String url = "https://firebasestorage.googleapis.com/v0/b/llmwatch-bc9e5.appspot.com/o?uploadType=media&name=images/myImage.jpg";
+    String url = "https://firebasestorage.googleapis.com/v0/b/llmwatch-bc9e5.appspot.com/o?uploadType=media&name=images/" + filename;
 
     http.begin(url);
     http.addHeader("Content-Type", "image/jpeg");
@@ -96,7 +120,8 @@ String uploadImageToFirebase() {
 
     if (!downloadUrl.isEmpty()) {
         // Construct the download URL
-        downloadUrl = "https://firebasestorage.googleapis.com/v0/b/llmwatch-bc9e5.appspot.com/o/images%2FmyImage.jpg?alt=media&token=" + downloadUrl;
+        downloadUrl = "https://firebasestorage.googleapis.com/v0/b/llmwatch-bc9e5.appspot.com/o/images%2F" + filename + "?alt=media&token=" + downloadUrl;
+
         Serial.println("Image uploaded successfully: " + downloadUrl);
     } else {
         Serial.println("Failed to upload image or parse response.");

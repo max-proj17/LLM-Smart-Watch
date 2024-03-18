@@ -5,6 +5,6 @@
 
 
 String getResponseFromOpenAI(const String& userPrompt, const String& imageUrl, const char* apiKey, const char* content);
-
+bool isImageUrlAccessible(const String& imageUrl);
 
 #endif

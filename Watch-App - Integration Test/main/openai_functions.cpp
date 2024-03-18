@@ -1,6 +1,17 @@
 #include "openai_functions.h"
 #include <ArduinoJson.h>
 
+
+// Function to check if the image URL is accessible
+bool isImageUrlAccessible(const String& imageUrl) {
+  HTTPClient http;
+  http.begin(imageUrl);
+  http.setTimeout(5000); // 5 seconds timeout
+  int httpCode = http.sendRequest("HEAD");
+  http.end();
+  return (httpCode == HTTP_CODE_OK);
+}
+
 String getResponseFromOpenAI(const String& userPrompt, const String& imageUrl, const char* apiKey, const char* content) {
 
   Serial.println("Initializing HTTP client...");
@@ -17,6 +28,15 @@ String getResponseFromOpenAI(const String& userPrompt, const String& imageUrl, c
 
   // Determine if the url is present and adjust the payload accordingly
   if (!imageUrl.isEmpty()) {
+    // Check if the image URL is accessible
+    Serial.println("Verifying image URL accessibility...");
+    if (!isImageUrlAccessible(imageUrl)) {
+      Serial.println("Image URL is not accessible. Exiting.");
+      return "Error: Image URL not accessible";
+    }
+    Serial.println("Image URL is accessible. Proceeding.");
+    // Proceed with including the image in the payload
+    
     Serial.println("Including image in payload...");
     doc["model"] = "gpt-4-vision-preview"; 
     JsonObject messages_0 = doc["messages"].createNestedObject();
