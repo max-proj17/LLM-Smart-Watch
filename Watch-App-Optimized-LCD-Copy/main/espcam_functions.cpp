@@ -7,6 +7,8 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
+
+
 int imageCounter = 0;
 const int maxImages = 15;
 
