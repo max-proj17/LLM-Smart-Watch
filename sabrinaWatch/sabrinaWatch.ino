@@ -37,7 +37,7 @@ Adafruit_GC9A01A tft(TFT_CS, TFT_DC);
 void setup() {
   Serial.begin(9600);  //initialize serial monitor to print out debug messages
 
-  setTime(18, 0, 0, 19, 2, 2024);  //hard code time for now
+  setTime(19, 0, 0, 19, 2, 2024);  //hard code time for now
 
   tft.begin();                    //initialize font printing object
   tft.fillScreen(GC9A01A_BLACK);  //fill the screen with black to clear out

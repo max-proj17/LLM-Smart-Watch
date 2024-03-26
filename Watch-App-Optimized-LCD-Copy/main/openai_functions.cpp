@@ -14,7 +14,7 @@ bool isImageUrlAccessible(const String& imageUrl) {
 
 String getResponseFromOpenAI(const String& userPrompt, const String& imageUrl, const char* apiKey, const char* content) {
 
-  //Serial.println("Initializing HTTP client...");
+
   HTTPClient http;
   http.begin("https://api.openai.com/v1/chat/completions"); 
   http.addHeader("Content-Type", "application/json");
@@ -22,22 +22,19 @@ String getResponseFromOpenAI(const String& userPrompt, const String& imageUrl, c
   http.addHeader("Authorization", token_key.c_str()); // Convert to C string
   http.setTimeout(10000); // Set timeout to 10 seconds
 
-
-  //Serial.println("Preparing payload...");
   DynamicJsonDocument doc(4096); 
 
   // Determine if the url is present and adjust the payload accordingly
   if (!imageUrl.isEmpty()) {
     // Check if the image URL is accessible
-    //Serial.println("Verifying image URL accessibility...");
+
     if (!isImageUrlAccessible(imageUrl)) {
-      //Serial.println("Image URL is not accessible. Exiting.");
+
       return "Error: Image URL not accessible";
     }
-    //Serial.println("Image URL is accessible. Proceeding.");
+   
     // Proceed with including the image in the payload
-    
-    //Serial.println("Including image in payload...");
+
     doc["model"] = "gpt-4-vision-preview"; 
     JsonObject messages_0 = doc["messages"].createNestedObject();
     messages_0["role"] = "user";
@@ -54,7 +51,7 @@ String getResponseFromOpenAI(const String& userPrompt, const String& imageUrl, c
   
     doc["max_tokens"] = 300;
   } else {
-    //Serial.println("Creating payload without image...");
+
     JsonArray messages = doc.createNestedArray("messages");
     JsonObject systemMessage = messages.createNestedObject();
     systemMessage["role"] = "system";
@@ -69,38 +66,24 @@ String getResponseFromOpenAI(const String& userPrompt, const String& imageUrl, c
 
   String payload;
   serializeJson(doc, payload); // Serialize the JSON document to a string
-  //Serial.println(payload);
-
-  //Serial.println("Sending HTTP POST request...");
+  
   int httpCode = http.POST(payload);
-  //Serial.printf("HTTP response code: %d\n", httpCode);
 
   if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
     String response = http.getString();
-    //Serial.println("HTTP request successful. Response received.");
-    
     DynamicJsonDocument jsonDoc(1024); 
-    //Serial.println("Deserializing JSON response...");
     DeserializationError error = deserializeJson(jsonDoc, response);
-    
     if (error) {
-      //Serial.print("deserializeJson() failed: ");
-      //Serial.println(error.c_str());
       http.end();
       return "Error: JSON deserialization failed";
     }
-
     if (jsonDoc.containsKey("choices") && jsonDoc["choices"][0].containsKey("message")) {
       String outputText = jsonDoc["choices"][0]["message"].as<String>();
-      //Serial.println("Response processed successfully.");
+  
       http.end();
       return outputText;
-    } else {
-     // Serial.println("Response format unexpected.");
-    }
-  } else {
-    //Serial.printf("HTTP request failed, code: %d\n", httpCode);
-  }
+    } 
+  } 
 
   http.end();
   return "Error: API request failed";

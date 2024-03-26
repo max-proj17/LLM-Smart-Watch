@@ -3,8 +3,8 @@
 
 
 #include <WiFi.h>
-#include <HTTPClient.h>
-#include <ArduinoJson.h>
+//#include <HTTPClient.h>
+//#include <ArduinoJson.h>
 #include "openai_functions.h"
 #include "espcam_functions.h" // Include the camera functions header
 #define BUTTON_PIN  0
@@ -15,6 +15,7 @@ const char* ssid = "ICS The Nest";
 const char* password = "hsv#gsxXeh";
 const char* apiKey = "";
 const char* content = "\"You are an AI assistant named Alex. You sound professional and don't talk more than needed. You are able to explain things simply and can give real life examples to complex concepts asked by the user.\"";  
+
 
 void setup() {
   Serial.begin(115200); // Increase baud rate for faster serial communication
@@ -44,7 +45,7 @@ void loop() {
   if (Serial.available() && !isWaitingForImageResponse) {
     input = Serial.readStringUntil('\n');
     input.trim();
-    //Serial.println("Received input: " + input);
+   
 
     if (input.equalsIgnoreCase("EXIT")) {
       Serial.println("Exiting conversation.");
@@ -80,12 +81,9 @@ void loop() {
     delay(50); // Debounce the button press.
     if (digitalRead(BUTTON_PIN) == LOW) {
       while (digitalRead(BUTTON_PIN) == LOW); // Wait for button release.
-      //Serial.println("Capturing and encoding image...");
       imageUrl = uploadImageToFirebase();
       if (imageUrl.isEmpty()) {
-        //Serial.println("Failed to capture or upload image.");
       } else {
-        //Serial.println("Image uploaded successfully. URL: " + imageUrl);
         // Send the query with the image URL.
         String response = getResponseFromOpenAI(input, imageUrl, apiKey, content);
         Serial.println("Response from OpenAI: " + response);

@@ -2,7 +2,7 @@
 #include "espcam_functions.h"
 #define CAMERA_MODEL_ESP32S3_EYE
 #include "camera_pins.h"
-#include "esp32-hal-log.h"
+//#include "esp32-hal-log.h"
 #include "esp_camera.h"
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
