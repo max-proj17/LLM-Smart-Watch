@@ -78,9 +78,10 @@ String getResponseFromOpenAI(const String& userPrompt, const String& imageUrl, c
       return "Error: JSON deserialization failed";
     }
     if (jsonDoc.containsKey("choices") && jsonDoc["choices"][0].containsKey("message")) {
-      String outputText = jsonDoc["choices"][0]["message"].as<String>();
+      String outputText = jsonDoc["choices"][0]["message"]["content"].as<String>();
   
       http.end();
+      
       return outputText;
     } 
   } 
