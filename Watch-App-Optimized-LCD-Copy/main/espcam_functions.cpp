@@ -56,23 +56,15 @@ void cameraSetup() {
   config.frame_size = FRAMESIZE_SVGA;
   config.fb_location = CAMERA_FB_IN_DRAM;
 
-  //Serial.println(psramFound());
-  // Adjustments for PSRAM
-  if (psramFound()) {
-    //config.jpeg_quality = 10;
-    //config.grab_mode = CAMERA_GRAB_LATEST;
-  } else {
-   
-  }
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
-    //Serial.printf("Camera init failed with error 0x%x", err);
+    Serial.printf("Camera init failed with error 0x%x", err);
     return;
   }
 
   sensor_t *s = esp_camera_sensor_get();
-  s->set_vflip(s, 0); // Adjustments for your specific camera module
+  s->set_vflip(s, 0); 
   s->set_brightness(s, 2);
   s->set_saturation(s, 0);
 
@@ -84,7 +76,7 @@ String uploadImageToFirebase() {
     fb = esp_camera_fb_get();
     esp_camera_fb_return(fb); // dispose the buffered image
     fb = NULL; // reset to capture errors
-    //Serial.println("TAKING SECOND IMAGE");
+    
     delay(1000); // Adjust the delay time as needed
     fb = esp_camera_fb_get(); // get fresh image
 

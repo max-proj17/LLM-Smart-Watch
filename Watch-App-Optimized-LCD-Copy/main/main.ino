@@ -12,17 +12,17 @@
 #include <freertos/task.h>
 #define BUTTON_PIN  0
 
+
 // const char* ssid = "Transponder Snail";
 // const char* password = "max17$$$";
 const char* ssid = "ICS The Nest";
 const char* password = "hsv#gsxXeh";
 const char* apiKey = "";
 const char* content = "\"You are an AI assistant named Alex. You sound professional and don't talk more than needed. You are able to explain things simply and can give real life examples to complex concepts asked by the user.\"";  
-// Global variable to toggle display modes
-//volatile bool displayAlphabetMode = false;
-String response = "";
+
 
 enum DisplayMode {
+  QUESTION_CYCLE,
   DISPLAY_TIME_DATE,
   IMAGE_YN,
   TAKE_IMG,
@@ -30,20 +30,45 @@ enum DisplayMode {
   DISP_OUTPUT
 };
 
+enum TaskState {
+  INITIAL,
+  WAIT_FOR_INPUT,
+  WAIT_FOR_IMAGE_DECISION,
+  WAIT_FOR_IMAGE_CAPTURE, // Additional state for handling image capture
+  PROCESS_QUERY
+};
+
+TaskState state = INITIAL;
+String response = "";
+const char* questions[] = {
+    "Who are you?",
+    "What is in the image?",
+    "What is an ESP32?"
+};
+
+const int questionsCount = sizeof(questions) / sizeof(questions[0]);
+int currentQuestionIndex = 0;
+unsigned long buttonPressStartTime = 0;
+bool isButtonBeingPressed = false;
 volatile DisplayMode displayMode = DISPLAY_TIME_DATE; // Default to showing time and date
+
 
 void DisplayTask(void * parameter) {
   for (;;) {
-    if (displayMode == DISPLAY_TIME_DATE) {
+
+    if (displayMode == QUESTION_CYCLE)
+    {
+        delay(50);
+    }else if (displayMode == DISPLAY_TIME_DATE) {
       updateDisplay();
     } else if (displayMode == IMAGE_YN) {
-      displayText("Image? (y/n)");
+      //displayText("Image? (y/n)");
 
     } else if (displayMode == TAKE_IMG) {
-      displayText("Take Image");
+      displayText("Take Image", 2, 12, 24);
 
     }else if (displayMode == PROCESSING) {
-      displayText("Processing...");
+      displayText("Processing...", 2, 12, 24);
 
     }else if (displayMode == DISP_OUTPUT) {
       displayText(response);
@@ -54,77 +79,123 @@ void DisplayTask(void * parameter) {
   }
 }
 
-enum TaskState {
-    WAIT_FOR_INPUT,
-    WAIT_FOR_IMAGE_DECISION,
-    WAIT_FOR_IMAGE_CAPTURE, // Additional state for handling image capture
-    PROCESS_QUERY
-};
 
 void AITask(void * parameter) {
-    TaskState state = WAIT_FOR_INPUT;
-    static bool isImageNeeded = false;
+    
+    
+    TaskState state = INITIAL;
     static String imageUrl = "";
     static String input = "";
+    bool isButtonBeingPressed = false;
+    unsigned long buttonPressStartTime = 0;
+    bool isImageNeeded = false;
 
     for (;;) {
+  
         switch (state) {
+            case INITIAL:
+              // Stay in this state until the button is pressed to start the interaction
+              if (digitalRead(BUTTON_PIN) == LOW) {
+                // Debounce and ensure it's a genuine press
+                delay(50); 
+                if (digitalRead(BUTTON_PIN) == LOW) {
+                  displayMode = QUESTION_CYCLE; // Move to displaying questions
+                  state = WAIT_FOR_INPUT; // Update state to start cycling questions
+                  displayText(questions[currentQuestionIndex], 2, 12, 24); // Show the first question immediately
+                }
+              }
+              vTaskDelay(pdMS_TO_TICKS(100));
+              break;
             case WAIT_FOR_INPUT:
-                if (Serial.available()) {
-                    input = Serial.readStringUntil('\n');
-                    input.trim();
 
-                    if (input.equalsIgnoreCase("EXIT")) {
-                        Serial.println("Exiting conversation.");
-                        while (true) {}
-                    }
+              if (digitalRead(BUTTON_PIN) == LOW ) { // Button is pressed
+                if (!isButtonBeingPressed) { // Initial press
+                    isButtonBeingPressed = true;
+                    buttonPressStartTime = millis();
+                } else if (millis() - buttonPressStartTime > 2000) { // Long press
+                    // Select the current question
+                    input = questions[currentQuestionIndex];
+                    Serial.println(input); // Debug print
+                    isButtonBeingPressed = false; // Reset press detection
                     displayMode = IMAGE_YN;
                     Serial.println("Is an image needed for this query? (yes/no)");
                     state = WAIT_FOR_IMAGE_DECISION;
+                    
                 }
-                break;
-
+              } else if (isButtonBeingPressed) { // Button was released before a long press
+                  isButtonBeingPressed = false;
+                  currentQuestionIndex = (currentQuestionIndex + 1) % questionsCount; // Cycle to the next question
+                  displayText(questions[currentQuestionIndex], 2, 12, 24);
+                  Serial.println(questions[currentQuestionIndex]); // Debug print, show next question
+  
+              }
+              vTaskDelay(pdMS_TO_TICKS(100));
+              break;
+                
             case WAIT_FOR_IMAGE_DECISION:
-                if (Serial.available()) {
-                    String imageNeededResponse = Serial.readStringUntil('\n');
-                    imageNeededResponse.trim();
 
-                    isImageNeeded = imageNeededResponse.equalsIgnoreCase("yes");
-                    Serial.println(isImageNeeded ? "Please press the button to capture an image." : "No image needed. Processing query...");
-                    displayMode = TAKE_IMG;
-                    state = isImageNeeded ? WAIT_FOR_IMAGE_CAPTURE : PROCESS_QUERY;
-                }
-                break;
+              if (digitalRead(BUTTON_PIN) == LOW ) { // Button is pressed
+                    if (!isButtonBeingPressed) { // Initial press
+                        isButtonBeingPressed = true;
+                        buttonPressStartTime = millis();
+                    } else if (millis() - buttonPressStartTime > 2000) { // Long press
+                      state = isImageNeeded ? WAIT_FOR_IMAGE_CAPTURE : PROCESS_QUERY;
+                      displayMode = isImageNeeded ? TAKE_IMG : PROCESSING;
+                      
+                    }
+              } else if (isButtonBeingPressed) { // Button was released before a long press
+                  isButtonBeingPressed = false;
+                  isImageNeeded = !isImageNeeded;
+                  displayText(isImageNeeded ? "Image? Yes" : "Image? No", 2, 12, 24);
+  
+              }
+                  
+              vTaskDelay(pdMS_TO_TICKS(100));
+              break;
 
             case WAIT_FOR_IMAGE_CAPTURE:
-                // Assuming button press is detected elsewhere (e.g., in an interrupt or another task monitoring the button)
+                // Assuming button press is detected in WAIT_FOR_IMAGE_DECISION
                 // and sets `imageUrl` appropriately. This state exists to wait for that process to complete.
+                delay(1000);
                 if (!imageUrl.isEmpty() || digitalRead(BUTTON_PIN) == LOW) { // Check if image URL is set or button is pressed
                     if (digitalRead(BUTTON_PIN) == LOW) {
                         delay(50); // Debounce delay
+                        
+                        Serial.println("Taking image....");
                         imageUrl = uploadImageToFirebase(); // Simulate capturing and uploading image
+                        Serial.println("Sent the image....");
+                        state = PROCESS_QUERY;
                     }
-                    state = PROCESS_QUERY;
+                    
                 }
+                vTaskDelay(pdMS_TO_TICKS(100));
                 break;
 
             case PROCESS_QUERY:
                 displayMode = PROCESSING;
                 Serial.println(isImageNeeded && !imageUrl.isEmpty() ? "Processing query with image..." : "Processing text-only query...");
-                // Fetch response from OpenAI (actual function implementation required)
+                // Fetch response from OpenAI 
                 response = getResponseFromOpenAI(input, imageUrl, apiKey, content);
                 displayMode = DISP_OUTPUT;
                 Serial.println(response);
                 // Display the response for 5-10 seconds
-                vTaskDelay(pdMS_TO_TICKS(5000)); // Adjust as needed
 
-                // Then revert to the normal watch face
-                displayMode = DISPLAY_TIME_DATE;
-                // Reset for the next query cycle
-                isImageNeeded = false;
-                imageUrl = ""; // Clear the image URL
-                input = ""; // Clear the input
-                state = WAIT_FOR_INPUT; // Reset state to initial
+                for(;;){
+                  if(digitalRead(BUTTON_PIN) == LOW){
+                    if (digitalRead(BUTTON_PIN) == LOW) {
+                      delay(50); // Debounce delay
+                      // Then revert to the normal watch face
+                      displayMode = DISPLAY_TIME_DATE;
+                      // Reset for the next query cycle
+                      isImageNeeded = false;
+                      imageUrl = ""; // Clear the image URL
+                      input = ""; // Clear the input
+                      state = INITIAL; // Reset state to initial
+                       vTaskDelay(pdMS_TO_TICKS(100));
+                      break;
+                    }
+                  }
+                }
                 break;
         }
 
@@ -149,15 +220,15 @@ void setup() {
     Serial.print(".");
   }
   Serial.println("\nConnected to WiFi. Type your question or 'EXIT' to end the conversation.");
-
   initializeDisplay();
+  
 
   // Create tasks for display and AI functionality
   xTaskCreate(DisplayTask, "Display Task", 10000, NULL, 1, NULL);
   xTaskCreate(AITask, "AI Task", 14000, NULL, 1, NULL);
 }
 
-// Inside loop() function of main.ino
+// Nothing inside loop() because everything is a task
 void loop() {
 
 

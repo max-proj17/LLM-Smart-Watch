@@ -18,6 +18,6 @@ extern Adafruit_GC9A01A tft; // Make the display object available externally
 
 void initializeDisplay();
 void updateDisplay();
-void displayText(const String& textToDisplay);
+void displayText(const String& textToDisplay, int textSize=1, int charWidth=6, int charHeight=12);
 
 #endif

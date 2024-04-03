@@ -64,16 +64,16 @@ void updateDisplay() {
 
 
 // Function to display the alphabet, repeated as necessary to fill the screen
-void displayText(const String& textToDisplay) {
+void displayText(const String& textToDisplay, int textSize, int charWidth, int charHeight) {
   tft.fillScreen(GC9A01A_BLACK); // Clear the screen
 
   // Set text properties
-  tft.setTextSize(2); // Choose text size 2 for larger characters
+  tft.setTextSize(textSize); // Choose text size 2 for larger characters
   tft.setTextColor(GC9A01A_WHITE);
 
   // Estimate the width and height of a character block at textSize(2)
-  int charWidth = 12; // Width of a character block at textSize(2), adjust as needed
-  int charHeight = 24; // Height of a character block at textSize(2), adjust as needed
+  //charWidth  // Width of a character block at textSize(2), adjust as needed
+  //charHeight // Height of a character block at textSize(2), adjust as needed
 
   // Calculate the maximum square size within the circular display
   int maxSquareSide = (int)(tft.width() / sqrt(2)); // Side length of the largest square that fits within the circle
