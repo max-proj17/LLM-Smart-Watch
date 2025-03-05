@@ -2,7 +2,6 @@
 #include "espcam_functions.h"
 #define CAMERA_MODEL_ESP32S3_EYE
 #include "camera_pins.h"
-//#include "esp32-hal-log.h"
 #include "esp_camera.h"
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -68,7 +67,6 @@ void cameraSetup() {
   s->set_brightness(s, 2);
   s->set_saturation(s, 0);
 
-  //Serial.println("Camera configuration complete!");
 }
 
 String uploadImageToFirebase() {

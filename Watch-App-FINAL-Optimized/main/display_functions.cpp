@@ -1,6 +1,5 @@
 #include "display_functions.h"
 
-//extern volatile DisplayMode displayMode;
 // Display constructor for primary hardware SPI connection
 Adafruit_GC9A01A tft = Adafruit_GC9A01A(TFT_CS, TFT_DC, TFT_RST);
 
